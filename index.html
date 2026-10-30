@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amine CO₂ Capture Screening Calculator</title>
+<style>
+  :root { --bg:#f5f7fa; --panel:#ffffff; --line:#d5dde8; --ink:#14202f; --muted:#5a6b82; --accent:#0f6e66; --warn:#a6432a; --ok:#2e7d32; --band:#e8f4f2; color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#0e141c; --panel:#162030; --line:#2a3a52; --ink:#e6edf6; --muted:#9aaac0; --accent:#6fd3c4; --warn:#ff9b7d; --ok:#8ed18e; --band:#17302e; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --bg:#0e141c; --panel:#162030; --line:#2a3a52; --ink:#e6edf6; --muted:#9aaac0; --accent:#6fd3c4; --warn:#ff9b7d; --ok:#8ed18e; --band:#17302e; color-scheme: dark; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; padding:24px 16px 56px; }
+  .tag { font:600 12px/1 ui-monospace,Menlo,monospace; color:var(--accent); text-transform:uppercase; letter-spacing:.1em; }
+  h1 { font-size:26px; margin:6px 0 4px; }
+  .lede { color:var(--muted); max-width:80ch; margin:0 0 18px; }
+  .grid { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+  @media (min-width:900px){ .grid{ grid-template-columns:minmax(0,340px) minmax(0,1fr);} }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; min-width:0; }
+  .card h2 { font-size:13px; margin:0 0 12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .field { margin:0 0 12px; }
+  .field label { display:block; font-size:14px; font-weight:600; margin-bottom:4px; }
+  .field .hint { font-size:12px; color:var(--muted); margin-top:3px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  input[type=number], select { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); font:inherit; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:14px; }
+  .kpi { border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--band); }
+  .kpi b { display:block; font:600 20px ui-monospace,Menlo,monospace; color:var(--accent); }
+  .kpi span { font-size:12px; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:6px 6px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  td.r, th.r { text-align:right; font-family:ui-monospace,Menlo,monospace; }
+  tr.cur td { background:var(--band); font-weight:600; }
+  .table-wrap { overflow-x:auto; }
+  .note { font-size:13px; color:var(--muted); }
+  ul.note { padding-left:18px; margin:6px 0; }
+  .warn { color:var(--warn); font-size:14px; margin:6px 0; }
+  .sec { margin-top:16px; }
+  button { font:inherit; padding:7px 12px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="tag">Screening tool · amine (MEA) CO₂ capture · not a design basis</div>
+    <h1>Amine CO₂ Capture Screening Calculator</h1>
+    <p class="lede">Solvent circulation, regeneration energy, capture rate and carbon intensity for a 30 wt% MEA absorber–stripper, from first-principles mass balances and published pilot-plant data. Use it to compare options and sense-check numbers before detailed modelling. It does not size columns, estimate capital cost, or replace a rate-based simulator.</p>
+  </header>
+
+  <div class="grid">
+    <section class="card" aria-label="Inputs">
+      <h2>Inputs</h2>
+      <div class="field">
+        <label for="fg">Flue gas flow (Nm³/h, dry basis)</label>
+        <input type="number" id="fg" value="100000" min="1000" step="1000">
+        <div class="hint">Standard cubic metres at 0 °C, 1 atm. Dry basis, so water is excluded.</div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="y">CO₂ in gas (vol %)</label>
+          <input type="number" id="y" value="12" min="2" max="25" step="0.5">
+          <div class="hint">Coal ~12–14, gas turbine ~4</div>
+        </div>
+        <div class="field">
+          <label for="cap">Capture rate (%)</label>
+          <input type="number" id="cap" value="90" min="50" max="99" step="1">
+          <div class="hint">Above ~95% is outside this model</div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="aLean">Lean loading (mol CO₂ / mol MEA)</label>
+        <input type="range" id="aLean" min="0.16" max="0.30" step="0.01" value="0.21">
+        <div class="hint"><output id="oLean"></output> · source range for specific energy 0.165–0.26</div>
+      </div>
+      <div class="field">
+        <label for="aRich">Rich loading (mol CO₂ / mol MEA)</label>
+        <input type="number" id="aRich" value="0.42" min="0.30" max="0.50" step="0.005">
+        <div class="hint">Pilot range 0.388–0.443. Set from absorber design, not from this tool.</div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="hours">Operating hours / year</label>
+          <input type="number" id="hours" value="8000" min="1" max="8760" step="100">
+        </div>
+        <div class="field">
+          <label for="src">Regeneration heat</label>
+          <select id="src">
+            <option value="gas">Gas-fired reboiler</option>
+            <option value="elec">Electric (100% efficient)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="effWrap">
+        <label for="eff">Boiler efficiency (%)</label>
+        <input type="number" id="eff" value="90" min="50" max="100" step="1">
+        <div class="hint">Assumption. Replace with the site's design value.</div>
+      </div>
+      <div id="warnings"></div>
+    </section>
+
+    <section class="card" aria-label="Results">
+      <h2>Results</h2>
+      <div class="kpis">
+        <div class="kpi"><b id="rCO2">–</b><span>CO₂ captured (t/h)</span></div>
+        <div class="kpi"><b id="rSolv">–</b><span>Lean solvent circulation (t/h)</span></div>
+        <div class="kpi"><b id="rLG">–</b><span>Solvent-to-gas ratio (kg/kg)</span></div>
+        <div class="kpi"><b id="rQ">–</b><span>Reboiler duty (MW)</span></div>
+        <div class="kpi"><b id="rE">–</b><span>Specific energy (MJ/kg CO₂)</span></div>
+        <div class="kpi"><b id="rNet">–</b><span>Net capture ratio (after regeneration CO₂)</span></div>
+      </div>
+
+      <div class="sec">
+        <h2>Annual totals</h2>
+        <div class="table-wrap">
+          <table>
+            <tbody>
+              <tr><td>CO₂ captured</td><td class="r" id="aCap"></td></tr>
+              <tr><td>Net CO₂ avoided (after regeneration emissions)</td><td class="r" id="aNet"></td></tr>
+              <tr><td>Regeneration energy</td><td class="r" id="aEn"></td></tr>
+              <tr><td>Solvent circulated</td><td class="r" id="aSolv"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h2>Trade-off across lean loading (same flue gas and capture rate)</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Lean loading</th><th class="r">Specific energy (MJ/kg)</th><th class="r">Solvent (t/h)</th><th class="r">Solvent-to-gas</th><th class="r">Reboiler (MW)</th><th class="r">Net capture</th></tr></thead>
+            <tbody id="sens"></tbody>
+          </table>
+        </div>
+        <p class="note">Higher lean loading needs less heat per kg CO₂ but circulates more solvent for the same capture, so the best lean loading depends on which cost dominates. Specific energy is interpolated from three published points (see method). The row for the current lean loading is highlighted.</p>
+        <div style="margin-top:8px"><button id="csv" type="button">Download trade-off table (CSV)</button></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card sec" aria-label="Method and sources">
+    <h2>Method, sources and limits</h2>
+    <ul class="note">
+      <li><b>Mass balance:</b> CO₂ captured = flue gas (kmol/h) × CO₂ fraction × capture rate. Flue gas molar mass uses 28.5 kg/kmol for the non-CO₂ fraction (dry, bulk N₂/O₂).</li>
+      <li><b>Solvent circulation:</b> 30 wt% MEA contains 4.91 mol MEA per kg solution. Each mol of CO₂ loaded per mol MEA therefore carries 0.216 kg CO₂ per kg solution. Circulation = CO₂ captured ÷ (0.216 × (rich − lean loading)).</li>
+      <li><b>Check against the literature:</b> at 5.5% CO₂ and 90% capture, with a loading swing of 0.19–0.23, this gives a solvent-to-gas ratio of about 1.5–1.8 kg/kg. Rezazadeh et al. (2016) report 1.58–1.64 kg/kg at their optimised conditions ✓ <a href="https://eprints.whiterose.ac.uk/104320/3/PerformanceEvaluation.pdf">[source]</a></li>
+      <li><b>Specific regeneration energy:</b> piecewise-linear through three points from Rezazadeh et al. (2016): 4.4 MJ/kg at lean loading 0.21 (IMTP25 packing), 3.64 MJ/kg at 0.26 (Mellapak 250Y), and 7.1 MJ/kg at 0.165 (base configuration, not optimised). The 0.165 point comes from a different configuration and should be treated as indicative.</li>
+      <li><b>Carbon intensity:</b> gas emissions factor 0.18231 kg CO₂e/kWh (gross CV) and grid electricity 0.13096 kg CO₂e/kWh (location-based, generation only), both from the DESNZ 2026 GHG conversion factors. Net capture ratio = 1 − regeneration CO₂ ÷ CO₂ captured.</li>
+      <li><b>Not included:</b> column diameter, packing height and flooding; absorber and stripper temperature profiles; solvent degradation and make-up; capital and operating cost; CO₂ compression; cooling duty; water balance; any part of the process other than the amine loop.</li>
+      <li><b>Validity:</b> results are only as good as the inputs. Rich loading, lean loading and specific energy should come from a validated simulation or pilot data for the actual solvent and packing before any decision.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---- BEGIN CALC (shared with test script) ----
+  var VM = 22.414;               // Nm³/kmol at 0 °C, 1 atm
+  var MW_CO2 = 44.01, MW_BULK = 28.5;
+  var MEA_MW = 61.08, MEA_WT = 0.30;
+  var MOL_MEA_PER_KG = MEA_WT * 1000 / MEA_MW;          // mol MEA per kg solution (4.91)
+  var CO2_KG_PER_KG_PER_LOAD = MOL_MEA_PER_KG * MW_CO2 / 1000;   // kg CO2 per kg solution per unit loading (0.216)
+  var EF_GAS = 0.18231, EF_GRID = 0.13096;              // kg CO2e per kWh, DESNZ 2026
+  // Specific regeneration energy points: [lean loading, MJ/kg CO2] from Rezazadeh et al. 2016
+  var E_POINTS = [[0.165, 7.1], [0.21, 4.4], [0.26, 3.64]];
+  var E_LOW = 3.2, E_HIGH = 4.2;                          // literature band, MJ/kg
+
+  function specificEnergy(a) {
+    if (a <= E_POINTS[0][0]) return E_POINTS[0][1];
+    if (a >= E_POINTS[2][0]) return E_POINTS[2][1];
+    for (var i = 1; i < E_POINTS.length; i++) {
+      if (a <= E_POINTS[i][0]) {
+        var f = (a - E_POINTS[i - 1][0]) / (E_POINTS[i][0] - E_POINTS[i - 1][0]);
+        return E_POINTS[i - 1][1] + f * (E_POINTS[i][1] - E_POINTS[i - 1][1]);
+      }
+    }
+  }
+
+  function screen(inp) {
+    var kmolFG = inp.fgNm3h / VM;                       // kmol/h
+    var y = inp.y / 100, cap = inp.cap / 100;
+    var co2In = kmolFG * y;                              // kmol/h
+    var co2Cap = co2In * cap;                            // kmol/h
+    var co2CapKg = co2Cap * MW_CO2;                      // kg/h
+    var fgKg = kmolFG * (y * MW_CO2 + (1 - y) * MW_BULK); // kg/h
+    var dA = inp.aRich - inp.aLean;
+    var solvKg = dA > 0 ? co2CapKg / (CO2_KG_PER_KG_PER_LOAD * dA) : NaN;   // kg/h lean solvent
+    var E = specificEnergy(inp.aLean);                   // MJ/kg CO2
+    var QMW = E * co2CapKg / 3600;                       // MW
+    var eff = inp.src === 'elec' ? 1 : inp.eff / 100;
+    var ef = inp.src === 'elec' ? EF_GRID : EF_GAS;
+    var regenKgPerKg = (E / 3.6) / eff * ef;             // kg CO2e emitted per kg CO2 captured
+    return {
+      co2CapT: co2Cap * MW_CO2 / 1000,                    // t/h
+      solvT: solvKg / 1000,                               // t/h
+      LG: solvKg / fgKg,                                  // kg/kg
+      E: E, QMW: QMW,
+      netRatio: 1 - regenKgPerKg,
+      annualCO2kt: co2CapKg * inp.hours / 1e6,
+      annualNetKt: co2CapKg * inp.hours * (1 - regenKgPerKg) / 1e6,
+      annualGWh: QMW * inp.hours / 1000,
+      annualSolvKt: solvKg * inp.hours / 1e6,
+      dA: dA
+    };
+  }
+
+  function warnings(inp) {
+    var w = [];
+    if (inp.aRich <= inp.aLean) w.push(['err', 'Rich loading must be greater than lean loading.']);
+    if (inp.aRich < 0.388 || inp.aRich > 0.443) w.push(['warn', 'Rich loading is outside the pilot range (0.388–0.443) in Rezazadeh et al. 2016.']);
+    if (inp.aLean < 0.165 || inp.aLean > 0.26) w.push(['warn', 'Specific energy is extrapolated beyond the source range (0.165–0.26); treat as indicative.']);
+    if (inp.aLean < 0.21) w.push(['warn', 'The 0.165 point is from the base configuration, not an optimised one; the energy at low lean loading is indicative only.']);
+    if (inp.cap > 95) w.push(['warn', 'Capture above 95% is outside this model: stripper energy and solvent losses rise steeply there.']);
+    if (inp.y < 3 || inp.y > 20) w.push(['warn', 'CO₂ fraction is outside the typical 3–20% range for flue gas.']);
+    return w;
+  }
+
+  function sensitivity(inp) {
+    var rows = [];
+    for (var a = 0.16; a <= 0.3001; a += 0.01) {
+      var l = Math.round(a * 100) / 100;
+      var r = screen({ fgNm3h: inp.fgNm3h, y: inp.y, cap: inp.cap, aLean: l, aRich: inp.aRich, hours: inp.hours, src: inp.src, eff: inp.eff });
+      rows.push({ lean: l, E: r.E, solvT: r.solvT, LG: r.LG, QMW: r.QMW, netRatio: r.netRatio, dA: r.dA });
+    }
+    return rows;
+  }
+  // ---- END CALC ----
+
+  function read() {
+    return {
+      fgNm3h: parseFloat($('fg').value), y: parseFloat($('y').value), cap: parseFloat($('cap').value),
+      aLean: parseFloat($('aLean').value), aRich: parseFloat($('aRich').value), hours: parseFloat($('hours').value),
+      src: $('src').value, eff: parseFloat($('eff').value)
+    };
+  }
+  var fmt = function (x, d) { return isFinite(x) ? x.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d }) : '–'; };
+
+  function render() {
+    var inp = read();
+    $('oLean').textContent = inp.aLean.toFixed(2);
+    $('effWrap').style.display = inp.src === 'elec' ? 'none' : '';
+    var bad = [];
+    var ws = warnings(inp);
+    $('warnings').innerHTML = ws.map(function (w) { return '<p class="warn" style="color:' + (w[0] === 'err' ? 'var(--warn)' : 'var(--muted)') + '">' + (w[0] === 'err' ? '✖ ' : '⚠ ') + w[1] + '</p>'; }).join('');
+    if (inp.aRich <= inp.aLean || !isFinite(inp.fgNm3h) || inp.fgNm3h <= 0) {
+      ['rCO2','rSolv','rLG','rQ','rE','rNet','aCap','aNet','aEn','aSolv'].forEach(function (id) { $(id).textContent = '–'; });
+      $('sens').innerHTML = '';
+      return;
+    }
+    var r = screen(inp);
+    $('rCO2').textContent = fmt(r.co2CapT, 1);
+    $('rSolv').textContent = fmt(r.solvT, 0);
+    $('rLG').textContent = fmt(r.LG, 2);
+    $('rQ').textContent = fmt(r.QMW, 1);
+    $('rE').textContent = fmt(r.E, 2);
+    $('rNet').textContent = fmt(r.netRatio * 100, 0) + '%';
+    $('aCap').textContent = fmt(r.annualCO2kt, 0) + ' kt CO₂';
+    $('aNet').textContent = fmt(r.annualNetKt, 0) + ' kt CO₂';
+    $('aEn').textContent = fmt(r.annualGWh, 0) + ' GWh (thermal)';
+    $('aSolv').textContent = fmt(r.annualSolvKt, 0) + ' kt';
+    var rows = sensitivity(inp);
+    $('sens').innerHTML = rows.map(function (s) {
+      var cur = Math.abs(s.lean - inp.aLean) < 0.005 ? ' class="cur"' : '';
+      return '<tr' + cur + '><td>' + s.lean.toFixed(2) + (s.dA <= 0 ? ' (invalid)' : '') + '</td><td class="r">' + fmt(s.E, 2) + '</td><td class="r">' + (s.dA > 0 ? fmt(s.solvT, 0) : '–') + '</td><td class="r">' + (s.dA > 0 ? fmt(s.LG, 2) : '–') + '</td><td class="r">' + fmt(s.QMW, 1) + '</td><td class="r">' + fmt(s.netRatio * 100, 0) + '%</td></tr>';
+    }).join('');
+  }
+
+  $('csv').addEventListener('click', function () {
+    var inp = read();
+    var rows = sensitivity(inp);
+    var lines = ['lean_loading,specific_energy_MJ_per_kg,solvent_t_per_h,solvent_to_gas_kg_per_kg,reboiler_MW,net_capture_ratio'];
+    rows.forEach(function (s) { lines.push([s.lean, s.E.toFixed(3), s.dA > 0 ? s.solvT.toFixed(2) : '', s.dA > 0 ? s.LG.toFixed(3) : '', s.QMW.toFixed(3), s.netRatio.toFixed(4)].join(',')); });
+    var blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'co2_capture_tradeoff.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  ['fg','y','cap','aLean','aRich','hours','src','eff'].forEach(function (id) { $(id).addEventListener('input', render); $(id).addEventListener('change', render); });
+  render();
+})();
+</script>
+</body>
+</html>
